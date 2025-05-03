@@ -3,21 +3,35 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    font-family: 'Segoe UI', sans-serif;
+  /* Reset styles for extension elements */
+  #oasis-extension-root * {
+    all: initial;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
   }
   
-  button, input, textarea {
-    @apply outline-none focus:outline-none;
+  #oasis-extension-root {
+    /* Reset all inherited properties */
+    all: initial;
+    /* Ensure our container doesn't inherit anything */
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+    line-height: 1.5 !important;
+    color: white !important;
+  }
+
+  /* Base styles for extension */
+  #oasis-extension-root button,
+  #oasis-extension-root input,
+  #oasis-extension-root textarea {
+    @apply outline-none focus:outline-none !important;
   }
 }
 
 @layer components {
   .oasis-button {
-    @apply border-none px-5 py-2 rounded-lg text-sm transition-colors duration-200;
+    @apply border-none px-5 py-2 rounded-lg text-sm transition-colors duration-200 !important;
   }
   
   .oasis-input {
-    @apply w-full min-h-[38px] bg-gray-900 text-white border border-gray-600 rounded-full px-6 py-2 text-sm transition-all;
+    @apply w-full min-h-[38px] bg-gray-900 text-white border border-gray-600 rounded-full px-6 py-2 text-sm transition-all !important;
   }
 }

@@ -62,7 +62,7 @@ const TagsInput = ({ tags, setTags }) => {
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
-        className="flex-grow min-w-[100px] bg-transparent border-none text-white px-3 py-1 outline-none text-sm"
+        className="flex-grow min-w-[100px] bg-transparent border-none text-white px-1 py-1 outline-none text-sm"
         placeholder={tags.length === 0 ? "e.g. Blog, Dark Theme, Modern" : ""}
       />
     </div>
