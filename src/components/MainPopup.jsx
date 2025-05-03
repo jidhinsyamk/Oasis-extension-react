@@ -18,6 +18,11 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
     }
   }, [notes]);
 
+  useEffect(() => {
+    console.log('Selected Project Updated:', selectedProject);
+  }, [selectedProject]);
+
+
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
@@ -41,7 +46,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
             imageUrl,
             name: name.trim() || (type === "screenshot" ? `Screenshot of ${new URL(tabUrl).hostname}` : "Saved Image"),
             notes,
-            tags, // Use local state
+            tags,
             tabUrl,
             projectId: selectedProject,
             userId
@@ -58,13 +63,13 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
     }
   };
 
-
   const handleGoToApp = () => {
     chrome.runtime.sendMessage({ action: "goToApp" });
   };
 
-  return (
-    <div style={{
+  // Inline styles for complete isolation
+  const styles = {
+    popup: {
       position: 'fixed',
       top: '50%',
       right: '20px',
@@ -75,91 +80,203 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
       backgroundColor: '#0E141A',
       borderRadius: '24px',
       border: '1px solid #333',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-    }}>
-      <div className="flex flex-col h-full p-5">
-        <div className="flex-grow overflow-y-auto pr-2">
-          <div className="flex gap-3 mb-4">
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+      fontFamily: '"Segoe UI", sans-serif',
+      overflow: 'hidden'
+    },
+    container: {
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      padding: '20px',
+      color: 'white'
+    },
+    previewContainer: {
+      display: 'flex',
+      gap: '12px',
+      marginBottom: '16px'
+    },
+    imagePreview: {
+      width: '175px',
+      height: '108px',
+      objectFit: 'cover',
+      borderRadius: '8px'
+    },
+    sourceInfo: {
+      width: '249px',
+      height: '108px',
+      borderRadius: '12px',
+      border: '1px solid #374151',
+      padding: '20px',
+      backgroundColor: '#1F2937',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      gap: '12px'
+    },
+    sourceLabel: {
+      fontSize: '12px',
+      color: '#9CA3AF',
+      margin: 0
+    },
+    sourceName: {
+      fontSize: '14px',
+      fontWeight: 'bold',
+      margin: 0
+    },
+    inputLabel: {
+      display: 'block',
+      fontSize: '14px',
+      marginBottom: '6px'
+    },
+    textInput: {
+      width: '100%',
+      minHeight: '38px',
+      backgroundColor: ' ',
+      color: 'white',
+      border: '1px solid #4A5568',
+      borderRadius: '9999px',
+      padding: '8px 24px',
+      fontSize: '14px',
+      outline: 'none',
+      transition: 'all 0.2s',
+      marginBottom: '16px'
+    },
+    textarea: {
+      width: '100%',
+      minHeight: '38px',
+      backgroundColor: ' ',
+      color: 'white',
+      border: '1px solid #4A5568',
+      borderRadius: '9999px',
+      padding: '8px 24px',
+      fontSize: '14px',
+      outline: 'none',
+      transition: 'all 0.2s',
+      resize: 'none',
+      overflow: 'hidden',
+      marginBottom: '16px',
+       
+    },
+    buttonGroup: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      marginTop: '20px'
+    },
+    button: {
+      border: '1px solid #4B5563',
+      color: 'white',
+      padding: '8px 20px',
+      borderRadius: '8px',
+      fontSize: '14px',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s'
+    },
+    primaryButton: {
+      backgroundColor: 'white',
+      color: 'black',
+      padding: '8px 20px',
+      borderRadius: '8px',
+      fontSize: '14px',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s'
+    },
+    disabledButton: {
+      backgroundColor: '#4B5563',
+      color: '#9CA3AF',
+      cursor: 'not-allowed'
+    },
+    errorText: {
+      color: '#F87171',
+      fontSize: '14px',
+      marginTop: '16px'
+    },
+    dropdownContainer: {
+      marginBottom: '16px'
+    }
+  };
+
+  return (
+    <div style={styles.popup}>
+      <div style={styles.container}>
+        <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '8px' }}>
+          <div style={styles.previewContainer}>
             <img 
               src={imageUrl} 
               alt="Preview" 
-              className="w-[175px] h-[108px] object-cover rounded-lg"
+              style={styles.imagePreview}
             />
-            <div className="w-[249px] h-[108px] rounded-xl border border-gray-700 p-5 bg-gray-800 flex flex-col justify-center gap-3">
-              <p className="text-xs text-gray-400 m-0">Saving {type === "screenshot" ? "Page" : "Image"} from</p>
-              <p className="text-sm font-bold m-0">{new URL(tabUrl).hostname}</p>
+            <div style={styles.sourceInfo}>
+              <p style={styles.sourceLabel}>
+                Saving {type === "screenshot" ? "Page" : "Image"} from
+              </p>
+              <p style={styles.sourceName}>{new URL(tabUrl).hostname}</p>
             </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm mb-1.5">Name</label>
+          <div>
+            <label style={styles.inputLabel}>Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full min-h-[38px] bg-gray-900 text-white border border-gray-600 rounded-full px-6 py-2 text-sm outline-none transition-all"
+              style={styles.textInput}
               placeholder="Enter name"
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm mb-1.5">Project</label>
-            <ProjectDropdown 
-              selectedProject={selectedProject}
-              onSelectProject={setSelectedProject}
-            />
-          </div>
+          <div style={styles.dropdownContainer}>
+          <label style={styles.inputLabel}>Project</label>
+          <ProjectDropdown 
+            selectedProject={selectedProject}
+            onSelectProject={setSelectedProject}
+          />
+        </div>
 
-          <div className="mb-4">
-            <label className="block text-sm mb-1.5">Tags</label>
+
+          <div>
+            <label style={styles.inputLabel}>Tags</label>
             <TagsInput 
               tags={tags}
               setTags={setTags}
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm mb-1.5">Notes</label>
+          <div className='mt-[16px]'>
+            <label style={styles.inputLabel}>Notes</label>
             <textarea
               ref={notesRef}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full min-h-[38px] bg-gray-900 text-white border border-gray-600 rounded-full px-6 py-2 text-sm outline-none transition-all resize-none overflow-hidden"
+              style={styles.textarea}
               placeholder="Add Notes"
               rows={1}
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-gray-400 mt-3">
-            <label className="flex items-center gap-2">
-              Oasis auto-detects when you copy a link.
-              <input type="checkbox" defaultChecked className="hidden" />
-              <span className="w-8 h-4 bg-gray-600 rounded-full relative cursor-pointer">
-                <span className="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform"></span>
-              </span>
-            </label>
-          </div>
-
-          {error && <div className="mt-4 text-red-400 text-sm">{error}</div>}
+          {error && <div style={styles.errorText}>{error}</div>}
         </div>
 
-        <div className="flex justify-between mt-5">
+        <div style={styles.buttonGroup}>
           <button
             onClick={handleGoToApp}
-            className="border border-gray-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-gray-800 transition-colors"
+            style={styles.button}
           >
             Go to App
           </button>
           <button
             onClick={handleSave}
             disabled={!selectedProject || isSaving}
-            className={`bg-white text-black px-5 py-2 rounded-lg text-sm ${!selectedProject || isSaving ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'hover:bg-gray-200'} transition-colors`}
+            style={{
+              ...styles.primaryButton,
+              ...(!selectedProject || isSaving ? styles.disabledButton : {})
+            }}
           >
             {isSaving ? 'Saving...' : 'Save'}
           </button>
           <button
             onClick={onClose}
-            className="border border-gray-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-gray-800 transition-colors"
+            style={styles.button}
           >
             Close
           </button>

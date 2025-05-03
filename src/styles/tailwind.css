@@ -1,24 +1,40 @@
 @import 'globals.css';
+
 @layer components {
-    .oasis-popup {
-      position: fixed !important;
-      top: 50% !important;
-      right: 20px !important;
-      transform: translateY(-50%) !important;
-      width: 486px !important;
-      height: 620px !important;
-      z-index: 2147483647 !important;
-      background-color: #0E141A !important;
-      border-radius: 24px !important;
-      border: 1px solid #333 !important;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
-      pointer-events: auto !important;
-    }
-    
-    .oasis-popup-container {
-      width: 100% !important;
-      height: 100% !important;
-      overflow: hidden !important;
-    }
+  #oasis-extension-root .oasis-popup {
+    position: fixed !important;
+    top: 50% !important;
+    right: 20px !important;
+    transform: translateY(-50%) !important;
+    width: 486px !important;
+    height: 620px !important;
+    z-index: 2147483647 !important;
+    background-color: #0E141A !important;
+    border-radius: 24px !important;
+    border: 1px solid #333 !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+    pointer-events: auto !important;
+    font-family: 'Segoe UI', sans-serif !important;
   }
   
+  #oasis-extension-root .oasis-popup-container {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  
+  /* Reset all interactive elements */
+  #oasis-extension-root button,
+  #oasis-extension-root input,
+  #oasis-extension-root select,
+  #oasis-extension-root textarea {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: none !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+  }
+}

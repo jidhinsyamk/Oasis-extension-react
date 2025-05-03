@@ -43,7 +43,7 @@ const DragDropPopup = ({ onClose }) => {
   }, [onClose]);
 
   return (
-    <div className="fixed top-1/2 left-4/5 transform -translate-x-1/2 -translate-y-1/2 z-[9999] w-[486px] h-[620px] rounded-2xl border border-gray-700 bg-gray-900 text-white font-sans overflow-hidden">
+    <div className="fixed top-1/2 right-5 transform -translate-y-1/2 z-[9999] w-[486px] h-[620px] rounded-2xl border border-gray-700 bg-gray-900 text-white font-sans overflow-hidden">
       <div className="w-[454px] h-[588px] m-4 bg-gray-800 border-2 border-dashed border-gray-500 rounded-lg flex justify-center items-center">
         <div className="w-[304px] h-[106px] flex flex-col items-center justify-center gap-5">
           <div className="text-4xl text-gray-400">↓</div>

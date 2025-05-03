@@ -138,7 +138,6 @@ const messageHandler = {
     try {
       switch (request.action) {
         case 'showPopup':
-          // Handle both URL and file data
           const imageData = request.imageUrl.startsWith('data:') ? 
             request.imageUrl : 
             URL.createObjectURL(request.file);
@@ -229,32 +228,86 @@ const messageHandler = {
   }
 };
 
-// 5. Injection System with Drag-and-Drop Support
+// 5. Injection System with Shadow DOM for Style Isolation
 const injectionSystem = {
   containerId: 'oasis-extension-root',
+  styleId: 'oasis-extension-styles',
+  reactRootId: 'oasis-react-root',
   isInjected: false,
 
   inject() {
     if (this.isInjected) return;
 
+    // Create container with Shadow DOM
     let container = document.getElementById(this.containerId);
     if (!container) {
       container = document.createElement('div');
       container.id = this.containerId;
+      const shadowRoot = container.attachShadow({ mode: 'open' });
+      
+      // Create style element
+      const styleElement = document.createElement('style');
+      styleElement.id = this.styleId;
+      
+      // Create React root container
+      const reactRoot = document.createElement('div');
+      reactRoot.id = this.reactRootId;
+      
+      // Append elements to shadow DOM
+      shadowRoot.appendChild(styleElement);
+      shadowRoot.appendChild(reactRoot);
+      
       document.documentElement.appendChild(container);
+      
+      // Load styles into shadow DOM
+      this.loadStyles(styleElement);
     }
 
     try {
-      const root = createRoot(container);
+      const root = createRoot(container.shadowRoot.getElementById(this.reactRootId));
       root.render(<OasisAppWrapper />);
       this.isInjected = true;
       messageHandler.flushQueue();
       
-      // Set up global drop handler
       document.addEventListener('drop', this.handleGlobalDrop);
     } catch (error) {
       console.error('React injection failed:', error);
       this.showFallbackUI();
+    }
+  },
+
+  async loadStyles(styleElement) {
+    try {
+      const styleUrl = chrome.runtime.getURL('styles/tailwind.css');
+      const response = await fetch(styleUrl);
+      const cssText = await response.text();
+      
+      // Add CSS reset and base styles
+      const resetStyles = `
+        :host {
+          all: initial;
+          font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+          color: white !important;
+        }
+        
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+        
+        input, button, textarea, select {
+          font: inherit;
+          color: inherit;
+          background-color: transparent;
+          border: none;
+          outline: none;
+        }
+      `;
+      
+      styleElement.textContent = resetStyles + cssText;
+    } catch (error) {
+      console.error('Failed to load styles:', error);
     }
   },
 
