@@ -1,0 +1,42 @@
+{
+    "manifest_version": 3,
+    "name": "Oasis Chrome Extension",
+    "version": "1.0",
+    "description": "Save images to Oasis",
+    "permissions": [
+      "contextMenus",
+      "activeTab",
+      "scripting",
+      "cookies",
+      "storage",
+      "tabs"
+    ],
+    "host_permissions": [
+      "http://localhost:5000/*",
+      "http://localhost:5173/*"
+    ],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "action": {
+      "default_icon": "icons/icon48.png"
+    },
+    "content_scripts": [
+      {
+        "matches": ["<all_urls>"],
+        "js": ["content.js"],
+        "css": ["styles/tailwind.css"],
+        "run_at": "document_end",
+        "all_frames": true
+      }
+    ],
+    "web_accessible_resources": [{
+      "resources": ["content.js", "styles/tailwind.css"],
+      "matches": ["<all_urls>"]
+    }],
+    "icons": {
+ 
+      "48": "icons/icon48.png"
+     
+    }
+  }

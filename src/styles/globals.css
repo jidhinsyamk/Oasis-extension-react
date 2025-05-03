@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  button, input, textarea {
+    @apply outline-none focus:outline-none;
+  }
+}
+
+@layer components {
+  .oasis-button {
+    @apply border-none px-5 py-2 rounded-lg text-sm transition-colors duration-200;
+  }
+  
+  .oasis-input {
+    @apply w-full min-h-[38px] bg-gray-900 text-white border border-gray-600 rounded-full px-6 py-2 text-sm transition-all;
+  }
+}
