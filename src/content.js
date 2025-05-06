@@ -282,30 +282,26 @@ const injectionSystem = {
       const response = await fetch(styleUrl);
       const cssText = await response.text();
       
-      // Add CSS reset and base styles
+      // More targeted CSS reset that won't affect host page
       const resetStyles = `
         :host {
-          all: initial;
           font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
           color: white !important;
         }
         
         * {
           box-sizing: border-box;
-          margin: 0;
-          padding: 0;
         }
         
         input, button, textarea, select {
           font: inherit;
-          color: inherit;
-          background-color: transparent;
-          border: none;
-          outline: none;
         }
       `;
       
-      styleElement.textContent = resetStyles + cssText;
+      // Filter out Tailwind's preflight/reset styles
+      const filteredCss = cssText.replace(/\/\*\! tailwindcss base .*?\*\/.*?\/\*\! tailwindcss base end \*\/\s*/gs, '');
+      
+      styleElement.textContent = resetStyles + filteredCss;
     } catch (error) {
       console.error('Failed to load styles:', error);
     }

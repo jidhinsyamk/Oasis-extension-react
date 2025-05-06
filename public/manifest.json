@@ -25,7 +25,6 @@
       {
         "matches": ["<all_urls>"],
         "js": ["content.js"],
-        "css": ["styles/tailwind.css"],
         "run_at": "document_end",
         "all_frames": true
       }
