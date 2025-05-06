@@ -3,6 +3,9 @@ module.exports = {
     "./src/**/*.{js,jsx}",
     "./public/**/*.html"
   ],
+  corePlugins: {
+    preflight: false, // Disable the CSS reset
+  },
   theme: {
     extend: {
       colors: {

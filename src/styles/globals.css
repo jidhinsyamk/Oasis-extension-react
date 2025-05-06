@@ -1,37 +1,24 @@
-@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  /* Reset styles for extension elements */
-  #oasis-extension-root * {
-    all: initial;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
-  }
-  
-  #oasis-extension-root {
-    /* Reset all inherited properties */
-    all: initial;
-    /* Ensure our container doesn't inherit anything */
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
-    line-height: 1.5 !important;
-    color: white !important;
-  }
-
-  /* Base styles for extension */
-  #oasis-extension-root button,
-  #oasis-extension-root input,
-  #oasis-extension-root textarea {
-    @apply outline-none focus:outline-none !important;
-  }
+/* More specific selectors for extension elements */
+#oasis-extension-root {
+  all: initial; /* Still reset everything inside our root */
 }
 
-@layer components {
-  .oasis-button {
-    @apply border-none px-5 py-2 rounded-lg text-sm transition-colors duration-200 !important;
-  }
-  
-  .oasis-input {
-    @apply w-full min-h-[38px] bg-gray-900 text-white border border-gray-600 rounded-full px-6 py-2 text-sm transition-all !important;
-  }
+#oasis-extension-root * {
+  all: unset; /* Reset but allow inheritance */
+  box-sizing: border-box;
+}
+
+/* More specific component styles */
+#oasis-extension-root .oasis-button {
+  @apply border-none px-5 py-2 rounded-lg text-sm transition-colors duration-200 !important;
+}
+
+#oasis-extension-root .oasis-input {
+  @apply w-full min-h-[38px] bg-gray-900 text-white border border-gray-600 rounded-full px-6 py-2 text-sm transition-all !important;
+}
+.custom-placeholder::placeholder {
+  color: rgba(139, 155, 171, 1);
 }
