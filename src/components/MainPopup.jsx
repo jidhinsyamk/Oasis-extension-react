@@ -9,7 +9,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
       : "Saved Image"
   );
   const [notes, setNotes] = useState("");
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProjects, setSelectedProjects] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const notesRef = useRef(null);
@@ -39,54 +39,56 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
   }, [notes]);
 
   useEffect(() => {
-    console.log("Selected Project Updated:", selectedProject);
-  }, [selectedProject]);
+    console.log("Selected Project Updated:", selectedProjects);
+  }, [selectedProjects]);
 
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
-
+  
     try {
-      if (!selectedProject) throw new Error("Please select a project");
-
-      const {
-        token,
-        userId,
-        error: authError,
-      } = await new Promise((resolve) => {
+      if (selectedProjects.length === 0) {
+        throw new Error('Please select at least one project');
+      }
+  
+      const { token, userId, error: authError } = await new Promise(resolve => {
         chrome.runtime.sendMessage({ action: "getToken" }, resolve);
       });
-
+  
       if (authError || !token || !userId) {
         throw new Error(
           authError || "Unauthorized! Please log in to the Oasis app."
         );
       }
-
-      const result = await new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-          {
-            action: "saveImage",
-            data: {
-              token,
-              imageUrl,
-              name:
-                name.trim() ||
-                (type === "screenshot"
-                  ? `Screenshot of ${new URL(tabUrl).hostname}`
-                  : "Saved Image"),
-              notes,
-              tags,
-              tabUrl,
-              projectId: selectedProject,
-              userId,
+  
+      // Save to all selected projects
+      for (const project of selectedProjects) {
+        const result = await new Promise((resolve) => {
+          chrome.runtime.sendMessage(
+            {
+              action: "saveImage",
+              data: {
+                token,
+                imageUrl,
+                name:
+                  name.trim() ||
+                  (type === "screenshot"
+                    ? `Screenshot of ${new URL(tabUrl).hostname}`
+                    : "Saved Image"),
+                notes,
+                tags,
+                tabUrl,
+                projectId: project._id, // ✅ Use project._id from the array
+                userId,
+              },
             },
-          },
-          resolve
-        );
-      });
-
-      if (result?.error) throw new Error(result.error);
+            resolve
+          );
+        });
+  
+        if (result?.error) throw new Error(result.error);
+      }
+  
       onSuccess();
     } catch (err) {
       setError(err.message);
@@ -94,6 +96,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
       setIsSaving(false);
     }
   };
+  
 
   const handleGoToApp = () => {
     chrome.runtime.sendMessage({ action: "goToApp" });
@@ -199,8 +202,8 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
           <div className="mb-4">
             <label className="block text-sm mb-1.5">Project</label>
             <ProjectDropdown
-              selectedProject={selectedProject}
-              onSelectProject={setSelectedProject}
+              selectedProjects={selectedProjects}
+              onSelectProjects={setSelectedProjects}
             />
           </div>
 
@@ -315,9 +318,9 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
 
           <button
             onClick={handleSave}
-            disabled={!selectedProject || isSaving}
+            disabled={!selectedProjects || isSaving}
             className={`text-sm transition-colors hover:opacity-90 ${
-              !selectedProject || isSaving
+              !selectedProjects || isSaving
                 ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                 : "text-black"
             }`}
@@ -328,7 +331,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
               border: "1px solid transparent",
               padding: "4px 16px",
               background:
-                !selectedProject || isSaving
+                !selectedProjects || isSaving
                   ? "gray" // fallback color when disabled
                   : "linear-gradient(183.56deg, rgba(255, 255, 255, 0.9) 2.92%, #C2C2C2 85.35%)",
             }}
