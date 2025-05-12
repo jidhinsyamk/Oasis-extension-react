@@ -9,7 +9,8 @@
       "scripting",
       "cookies",
       "storage",
-      "tabs"
+      "tabs",
+       "clipboardRead"
     ],
     "host_permissions": [
       "http://localhost:5000/*",

@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import ProjectDropdown from "./ProjectDropdown";
 import TagsInput from "./TagsInput";
 
-const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
+const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, author, description }) => {
   const [name, setName] = useState(
-    type === "screenshot"
-      ? `Screenshot of ${new URL(tabUrl).hostname}`
-      : "Saved Image"
+    type === "microlink"
+      ? (pageTitle || tabUrl || "Preview")
+      : (type === "screenshot"
+        ? (pageTitle || `Screenshot of ${new URL(tabUrl).hostname}`)
+        : "Saved Image")
   );
   const [notes, setNotes] = useState("");
   const [selectedProjects, setSelectedProjects] = useState([]);
@@ -41,6 +43,15 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
   useEffect(() => {
     console.log("Selected Project Updated:", selectedProjects);
   }, [selectedProjects]);
+
+  useEffect(() => {
+    // Load toggle state from chrome.storage.local
+    chrome.storage.local.get(['oasisAutoDetectLinks'], (result) => {
+      if (typeof result.oasisAutoDetectLinks === 'boolean') {
+        setAutoDetectLinks(result.oasisAutoDetectLinks);
+      }
+    });
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -100,6 +111,14 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
 
   const handleGoToApp = () => {
     chrome.runtime.sendMessage({ action: "goToApp" });
+  };
+
+  const handleToggleChange = () => {
+    const newValue = !autoDetectLinks;
+    setAutoDetectLinks(newValue);
+    chrome.storage.local.set({ oasisAutoDetectLinks: newValue });
+    // Notify content script (in case needed for event listeners)
+    chrome.runtime.sendMessage({ action: 'autoDetectLinksToggled', enabled: newValue });
   };
 
   return (
@@ -165,18 +184,24 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
           {/* Preview Section */}
           <div className="flex gap-3 mb-4">
             <img
-              src={imageUrl}
+              src={imageUrl || "/icons/icon48.png"}
               alt="Preview"
               className="w-[175px] h-[108px] object-cover rounded-lg"
             />
             <div className="relative w-[249px] h-[108px] p-[1px] rounded-xl before:content-[''] before:absolute before:inset-0 before:rounded-xl before:bg-[linear-gradient(360deg,rgba(255,255,255,0.1),rgba(230,246,255,0.5))] before:z-[-1]">
               <div className="w-full h-full rounded-[10px] bg-gray-800 p-5 flex flex-col justify-center gap-3">
                 <p className="text-xs text-gray-400 m-0">
-                  Saving {type === "screenshot" ? "Page" : "Image"} from
+                  {type === "microlink" ? "Preview from" : type === "screenshot" ? "Saving Page from" : "Saving Image from"}
                 </p>
                 <p className="text-sm font-bold m-0">
-                  {new URL(tabUrl).hostname}
+                  {type === "microlink" ? tabUrl : new URL(tabUrl).hostname}
                 </p>
+                {type === "microlink" && author && (
+                  <p className="text-xs text-gray-300 m-0">By: {author}</p>
+                )}
+                {type === "microlink" && description && (
+                  <p className="text-xs text-gray-400 m-0 line-clamp-2">{description}</p>
+                )}
               </div>
             </div>
           </div>
@@ -281,7 +306,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess }) => {
               type="checkbox"
               className="sr-only peer"
               checked={autoDetectLinks}
-              onChange={() => setAutoDetectLinks(!autoDetectLinks)}
+              onChange={handleToggleChange}
             />
             <div
               className={`w-full h-full rounded-full transition-colors duration-200 ease-in-out bg-gray-400 peer-checked:bg-blue-600`}
