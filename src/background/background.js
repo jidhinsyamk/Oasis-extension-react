@@ -212,6 +212,85 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     return true;
   }
+
+  // --- Auto-detect copy URL handler ---
+  if (request.action === 'autoDetectCopyUrl') {
+    console.log('Received autoDetectCopyUrl message:', request);
+    (async () => {
+      try {
+        const url = request.url;
+        let previewImage = '';
+        let previewTitle = '';
+        let previewUrl = url;
+        let previewAuthor = '';
+        let previewDescription = '';
+        // Fetch preview from Microlink API
+        try {
+          const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true`;
+          const res = await fetch(apiUrl);
+          const data = await res.json();
+          console.log('Microlink API response:', data);
+          if (data.status === 'success') {
+            previewImage = data.data.screenshot?.url || data.data.image?.url || '';
+            previewTitle = data.data.title || url;
+            previewUrl = data.data.url || url;
+            previewAuthor = data.data.author || '';
+            previewDescription = data.data.description || '';
+          } else {
+            previewTitle = url;
+          }
+        } catch (err) {
+          console.error('Microlink fetch failed:', err);
+          previewTitle = url;
+        }
+        // Find the active tab in the current window
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs[0];
+        if (!tab || !tab.id) {
+          console.error('No active tab found');
+          return;
+        }
+        // Ensure content script is injected
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content.js']
+          });
+        } catch (err) {
+          console.error('Error injecting content script:', err);
+          return;
+        }
+        // Send message to show popup with Microlink preview
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'showPopup',
+          imageUrl: previewImage,
+          tabUrl: previewUrl,
+          type: 'microlink',
+          pageTitle: previewTitle,
+          author: previewAuthor,
+          description: previewDescription
+        });
+        console.log('Popup triggered with Microlink preview');
+      } catch (error) {
+        console.error('Error in Microlink autoDetectCopyUrl handler:', error);
+      }
+    })();
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (request.action === 'injectContentScript') {
+    chrome.scripting.executeScript({
+      target: { tabId: sender.tab.id },
+      files: ['content.js']
+    }).then(() => {
+      sendResponse({ success: true });
+    }).catch((error) => {
+      console.error('Error injecting content script:', error);
+      sendResponse({ error: error.message });
+    });
+    return true; // Keep the message channel open for the async response
+  }
 });
 
 // Project creation handler
