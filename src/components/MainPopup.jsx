@@ -208,7 +208,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
 
           {/* Input Fields */}
           <div className="mb-4">
-            <label className="block text-sm mb-1.5">Name</label>
+            <label className="block text-sm mb-1.5">Names</label>
             <input
               type="text"
               value={name}

@@ -250,17 +250,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.error('No active tab found');
           return;
         }
-        // Ensure content script is injected
-        try {
-          await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['content.js']
-          });
-        } catch (err) {
-          console.error('Error injecting content script:', err);
-          return;
-        }
-        // Send message to show popup with Microlink preview
+        await ensureContentScript(tab.id);
         await chrome.tabs.sendMessage(tab.id, {
           action: 'showPopup',
           imageUrl: previewImage,
@@ -402,5 +392,16 @@ async function saveImageToBackend(data) {
   } catch (error) {
     console.error("Upload error:", error);
     throw error;
+  }
+}
+
+async function ensureContentScript(tabId) {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content.js']
+    });
+  } catch (e) {
+    // Ignore if already injected
   }
 }
