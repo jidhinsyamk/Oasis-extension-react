@@ -38,7 +38,7 @@ const SuccessPopup = ({ onClose }) => {
       className="fixed bg-[#0E141A] border border-[#333] shadow-lg text-white font-sans overflow-hidden flex flex-col justify-center items-center text-center"
       style={popupStyle}
     >
-      {/* Success Icon */}
+       
       <div className="flex items-center justify-center w-12 h-12 mb-4 bg-[#25D366] rounded-full">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -54,7 +54,7 @@ const SuccessPopup = ({ onClose }) => {
         </svg>
       </div>
 
-      {/* Text */}
+      
       <h2 className="text-white text-2xl font-semibold mb-2">
         Saved Successfully!
       </h2>
@@ -62,11 +62,11 @@ const SuccessPopup = ({ onClose }) => {
         Your image has been saved to Oasis.
       </p>
 
-      {/* Button */}
+      
       <div className="flex justify-between">
         <button
           onClick={handleVisit}
-          className="w-[214px] h-[40px] text-sm font-normal text-white bg-[#121920] border border-[#FFFFFF1F] rounded-[60px] transition-all duration-200 hover:bg-[#10B981] flex items-center justify-center gap-0 px-4"
+          className="w-[214px] h-[40px] text-sm font-normal text-white bg-[#121920] border border-[#FFFFFF1F] rounded-[60px] transition-all duration-200 hover:shadow-[inset_0_0_7px_rgba(255,255,255,0.21),inset_0_-3px_4px_rgba(255,255,255,0)] focus:outline-none focus:shadow-[inset_0_0_7px_rgba(255,255,255,0.21),inset_0_-3px_4px_rgba(255,255,255,0)] active:bg-[#121920] flex items-center justify-center gap-0 px-4"
         >
           <span className="flex items-center">
             Visit reference

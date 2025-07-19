@@ -23,33 +23,31 @@ const DragDropPopup = ({ onClose }) => {
               },
             })
           );
+          onClose(); // Close immediately after dispatching, no setTimeout
         };
         reader.readAsDataURL(files[0]);
-      } else if (url && /^https?:\/\//.test(url)) {
-        // If a URL is dropped, trigger the main popup with Microlink preview
+      } else if (url && /^https?:\/{2}/.test(url)) {
         try {
-          // First ensure the extension is injected
           if (!document.getElementById('oasis-extension-root')) {
-            chrome.runtime.sendMessage({ action: 'injectContentScript' });
+            await new Promise((resolve) => {
+              chrome.runtime.sendMessage({ action: 'injectContentScript' }, resolve);
+            });
           }
-
-          // Then send the URL to process
-          const response = await new Promise((resolve) => {
+          await new Promise((resolve) => {
             chrome.runtime.sendMessage({
               action: 'autoDetectCopyUrl',
               url: url,
               pageTitle: document.title || ''
             }, resolve);
           });
-
-          if (response?.error) {
-            console.error('Error processing dropped URL:', response.error);
-          }
+          onClose(); // Close immediately after dispatching, no setTimeout
         } catch (error) {
           console.error('Error handling URL drop:', error);
+          onClose();
         }
+      } else {
+        onClose();
       }
-      onClose();
     };
 
     const handleDragOver = (e) => e.preventDefault();

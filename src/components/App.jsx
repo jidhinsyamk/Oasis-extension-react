@@ -16,7 +16,18 @@ const App = ({ tagsManager }) => {
           imageUrl: event.detail.imageUrl,
           tabUrl: event.detail.tabUrl,
           type: event.detail.type,
+          pageTitle: event.detail.pageTitle,
+          author: event.detail.author,
+          description: event.detail.description,
+          loading: event.detail.loading || false,
         });
+        setPopupType("main");
+      } else if (event.detail?.action === "updatePopup") {
+        setPopupData((prev) => ({
+          ...prev,
+          ...event.detail,
+          loading: false,
+        }));
         setPopupType("main");
       } else if (event.detail?.action === "showError") {
         setError(event.detail.message);
@@ -50,7 +61,7 @@ const App = ({ tagsManager }) => {
 
   const showSuccess = () => {
     setPopupType("success");
-    setTimeout(handleClose, 9000);
+    setTimeout(handleClose, 3000);
   };
 
   switch (popupType) {
@@ -58,6 +69,7 @@ const App = ({ tagsManager }) => {
       return (
         <MainPopup
           {...popupData}
+          loading={popupData?.loading}
           onClose={handleClose}
           onSuccess={showSuccess}
         />
