@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import ProjectDropdown from "./ProjectDropdown";
 import TagsInput from "./TagsInput";
 
-const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, author, description }) => {
+const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, author, description, loading }) => {
   const [name, setName] = useState(
     type === "microlink"
       ? (pageTitle || tabUrl || "Preview")
       : (type === "screenshot"
-        ? (pageTitle || `Screenshot of ${new URL(tabUrl).hostname}`)
+        ? (pageTitle || `Screenshot of ${tabUrl ? new URL(tabUrl).hostname : ''}`)
         : "Saved Image")
   );
   const [notes, setNotes] = useState("");
@@ -18,6 +18,23 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
   const [tags, setTags] = useState([]);
   const [autoDetectLinks, setAutoDetectLinks] = useState(false);
   const popupRef = useRef(null);
+
+
+  useEffect(() => {
+    const handleUpdatePopup = (event) => {
+      if (event.detail?.action === 'updatePopup') {
+        if (event.detail.imageUrl) setImageUrl(event.detail.imageUrl);
+        if (event.detail.pageTitle) setName(event.detail.pageTitle);
+
+      }
+    };
+    window.addEventListener('oasisMessage', handleUpdatePopup);
+    return () => window.removeEventListener('oasisMessage', handleUpdatePopup);
+  }, []);
+
+
+  const [imageUrlState, setImageUrl] = useState(imageUrl);
+  useEffect(() => { setImageUrl(imageUrl); }, [imageUrl]);
 
   useEffect(() => {
     const adjustScale = () => {
@@ -45,7 +62,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
   }, [selectedProjects]);
 
   useEffect(() => {
-    // Load toggle state from chrome.storage.local
+
     chrome.storage.local.get(['oasisAutoDetectLinks'], (result) => {
       if (typeof result.oasisAutoDetectLinks === 'boolean') {
         setAutoDetectLinks(result.oasisAutoDetectLinks);
@@ -56,23 +73,23 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
-  
+
     try {
       if (selectedProjects.length === 0) {
         throw new Error('Please select at least one project');
       }
-  
+
       const { token, userId, error: authError } = await new Promise(resolve => {
         chrome.runtime.sendMessage({ action: "getToken" }, resolve);
       });
-  
+
       if (authError || !token || !userId) {
         throw new Error(
           authError || "Unauthorized! Please log in to the Oasis app."
         );
       }
-  
-      // Save to all selected projects
+
+
       for (const project of selectedProjects) {
         const result = await new Promise((resolve) => {
           chrome.runtime.sendMessage(
@@ -89,17 +106,17 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
                 notes,
                 tags,
                 tabUrl,
-                projectId: project._id, // ✅ Use project._id from the array
+                projectId: project._id,
                 userId,
               },
             },
             resolve
           );
         });
-  
+
         if (result?.error) throw new Error(result.error);
       }
-  
+
       onSuccess();
     } catch (err) {
       setError(err.message);
@@ -107,7 +124,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
       setIsSaving(false);
     }
   };
-  
+
 
   const handleGoToApp = () => {
     chrome.runtime.sendMessage({ action: "goToApp" });
@@ -117,14 +134,14 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
     const newValue = !autoDetectLinks;
     setAutoDetectLinks(newValue);
     chrome.storage.local.set({ oasisAutoDetectLinks: newValue });
-    // Notify content script (in case needed for event listeners)
+
     chrome.runtime.sendMessage({ action: 'autoDetectLinksToggled', enabled: newValue });
   };
 
   return (
     <div
       ref={popupRef}
-      className="fixed"
+      className="fixed custom-scrollbar"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -152,7 +169,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
           overflow: "hidden",
         }}
       >
-        {/* Close Button - positioned at top right */}
+
         <button
           onClick={onClose}
           className="absolute top-2 right-2 p-0 bg-transparent border-none outline-none hover:text-gray-300 text-gray-400"
@@ -180,20 +197,39 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
           </svg>
         </button>
 
-        <div className="flex-grow overflow-y-auto pr-2">
-          {/* Preview Section */}
-          <div className="flex gap-3 mb-4">
+        <div className="flex-grow overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded">
+
+          <div className="flex gap-3 mb-4" style={{ position: 'relative' }}>
             <img
-              src={imageUrl || "/icons/icon48.png"}
+              src={imageUrlState || "/icons/icon48.png"}
               alt="Preview"
               className="w-[175px] h-[108px] object-cover rounded-lg"
+              style={loading ? { filter: 'blur(2px)', opacity: 0.7 } : {}}
             />
+            {loading && (
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: '175px',
+                height: '108px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(30,30,30,0.5)',
+                borderRadius: '12px',
+                zIndex: 2
+              }}>
+                <div className="loader" style={{ width: 32, height: 32, border: '4px solid #fff', borderTop: '4px solid #888', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }`}</style>
+              </div>
+            )}
             <div className="relative w-[249px] h-[108px] p-[1px] rounded-xl before:content-[''] before:absolute before:inset-0 before:rounded-xl before:bg-[linear-gradient(360deg,rgba(255,255,255,0.1),rgba(230,246,255,0.5))] before:z-[-1]">
-              <div className="w-full h-full rounded-[10px] bg-gray-800 p-5 flex flex-col justify-center gap-3">
+              <div className="w-full h-full rounded-[10px] bg-gray-800 p-3 flex flex-col justify-center gap-3">
                 <p className="text-xs text-gray-400 m-0">
                   {type === "microlink" ? "Preview from" : type === "screenshot" ? "Saving Page from" : "Saving Image from"}
                 </p>
-                <p className="text-sm font-bold m-0">
+                <p className="text-sm font-bold m-0 break-all whitespace-normal overflow-hidden">
                   {type === "microlink" ? tabUrl : new URL(tabUrl).hostname}
                 </p>
                 {type === "microlink" && author && (
@@ -206,9 +242,9 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
             </div>
           </div>
 
-          {/* Input Fields */}
+
           <div className="mb-4">
-            <label className="block text-sm mb-1.5">Names</label>
+            <label className="block text-sm mb-1.5">Name</label>
             <input
               type="text"
               value={name}
@@ -229,12 +265,13 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
             <ProjectDropdown
               selectedProjects={selectedProjects}
               onSelectProjects={setSelectedProjects}
+              className="w-full min-h-[38px] px-2 py-2 text-sm rounded-full"
             />
           </div>
 
           <div className="mb-4">
             <label className="block text-sm mb-1.5">Tags</label>
-            <TagsInput tags={tags} setTags={setTags} />
+            <TagsInput tags={tags} setTags={setTags} className="w-full min-h-[38px] px-2 py-2 text-sm rounded-full" />
           </div>
 
           <div className="mt-4 mb-4">
@@ -244,11 +281,11 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
               value={notes}
               onChange={(e) => {
                 setNotes(e.target.value);
-                // Auto-resize and update rounded corners
+
                 if (notesRef.current) {
                   notesRef.current.style.height = "auto";
                   notesRef.current.style.height = `${notesRef.current.scrollHeight}px`;
-                  // Toggle rounded classes based on content height
+
                   if (notesRef.current.scrollHeight > 38) {
                     notesRef.current.classList.remove("rounded-full");
                     notesRef.current.classList.add("rounded-lg");
@@ -258,7 +295,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
                   }
                 }
               }}
-              className="w-full min-h-[38px] bg-[#0E141A] text-white px-6 py-2 text-sm outline-none transition-all resize-none overflow-hidden leading-normal focus:shadow-[inset_0_0_7px_rgba(255,255,255,0.21),inset_0_-3px_4px_rgba(255,255,255,0)] focus:backdrop-blur-sm custom-placeholder rounded-full"
+              className="w-full min-h-[38px] bg-[#0E141A] text-white px-5 py-2 text-sm outline-none transition-all resize-none overflow-hidden leading-normal focus:shadow-[inset_0_0_7px_rgba(255,255,255,0.21),inset_0_-3px_4px_rgba(255,255,255,0)] focus:backdrop-blur-sm custom-placeholder rounded-full"
               style={{
                 border: "1px solid transparent",
                 background:
@@ -285,9 +322,6 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
           {error && <div className="text-red-400 text-sm mt-4">{error}</div>}
         </div>
 
-        {/* Toggle Section - now full width */}
-        {/* Toggle Section */}
-        {/* Toggle Section */}
         <div
           className="flex items-center justify-between px-5 -mx-5 mb-3"
           style={{
@@ -300,7 +334,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
             Oasis auto-detects when you copy a link.
           </p>
 
-          {/* WORKING TOGGLE BUTTON */}
+
           <label className="relative inline-flex items-center cursor-pointer w-8 h-[18px]">
             <input
               type="checkbox"
@@ -312,14 +346,13 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
               className={`w-full h-full rounded-full transition-colors duration-200 ease-in-out bg-gray-400 peer-checked:bg-blue-600`}
             />
             <div
-              className={`absolute top-[2px] h-[14px] w-[14px] bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${
-                autoDetectLinks ? "right-[2px]" : "left-[2px]"
-              }`}
+              className={`absolute top-[2px] h-[14px] w-[14px] bg-white rounded-full shadow-sm transform transition-transform duration-200 ease-in-out ${autoDetectLinks ? "right-[2px]" : "left-[2px]"
+                }`}
             />
           </label>
         </div>
 
-        {/* Buttons - spaced between with exact styling */}
+
         <div className="flex justify-between mt-5">
           <button
             onClick={handleGoToApp}
@@ -343,12 +376,11 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
 
           <button
             onClick={handleSave}
-            disabled={!selectedProjects || isSaving}
-            className={`text-sm transition-colors hover:opacity-90 ${
-              !selectedProjects || isSaving
+            disabled={!selectedProjects || isSaving || loading}
+            className={`text-sm transition-colors hover:opacity-90 ${!selectedProjects || isSaving || loading
                 ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                 : "text-black"
-            }`}
+              }`}
             style={{
               width: "214px",
               height: "40px",
@@ -356,12 +388,12 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
               border: "1px solid transparent",
               padding: "4px 16px",
               background:
-                !selectedProjects || isSaving
-                  ? "gray" // fallback color when disabled
+                !selectedProjects || isSaving || loading
+                  ? "gray"
                   : "linear-gradient(183.56deg, rgba(255, 255, 255, 0.9) 2.92%, #C2C2C2 85.35%)",
             }}
           >
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? "Saving..." : loading ? "Loading..." : "Save"}
           </button>
         </div>
       </div>

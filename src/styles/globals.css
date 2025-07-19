@@ -22,3 +22,26 @@
 .custom-placeholder::placeholder {
   color: rgba(139, 155, 171, 1);
 }
+/* Add this to your global CSS */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #3f4b5a; /* Subtle gray-blue */
+  border-radius: 8px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #5a6a7c; /* Slightly lighter on hover */
+}
+
+/* Firefox support */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3f4b5a transparent;
+}

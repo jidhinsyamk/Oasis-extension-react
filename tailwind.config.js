@@ -4,7 +4,7 @@ module.exports = {
     "./public/**/*.html"
   ],
   corePlugins: {
-    preflight: false, // Disable the CSS reset
+    preflight: false,  
   },
   theme: {
     extend: {
@@ -21,6 +21,21 @@ module.exports = {
           100: '#F3F4F6',
         },
       },
+      // Add scrollbar configuration here
+      scrollbar: ({ theme }) => ({
+        thin: {
+          width: '6px',
+          track: {
+            background: 'transparent',
+          },
+          thumb: {
+            background: theme('colors.gray.600'),
+            '&:hover': {
+              background: theme('colors.gray.500'),
+            },
+          },
+        },
+      }),
     },
   },
   plugins: [],

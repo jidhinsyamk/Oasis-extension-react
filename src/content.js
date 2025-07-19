@@ -151,7 +151,8 @@ const messageHandler = {
             type: request.type || 'image',
             pageTitle: request.pageTitle || '',
             author: request.author || '',
-            description: request.description || ''
+            description: request.description || '',
+            loading: request.loading || false
           };
 
           const dispatchPopup = () => {
@@ -172,6 +173,12 @@ const messageHandler = {
           } else {
             dispatchPopup();
           }
+          return true;
+
+        case 'updatePopup':
+          // Dispatch an update event to update the popup's data
+          window.dispatchEvent(new CustomEvent('oasisMessage', { detail: { ...request, action: 'updatePopup' } }));
+          sendResponse && sendResponse({ success: true });
           return true;
 
         case 'getTags':

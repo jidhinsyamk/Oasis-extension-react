@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
-const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
+const ProjectDropdown = ({ selectedProjects = [], onSelectProjects, className = '' }) => {
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -10,85 +10,98 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const projectsData = await new Promise(resolve => {
-          chrome.runtime.sendMessage({ action: "getProjects" }, (response) => {
-            resolve(response?.data?.data || []);
-          });
-        });
-        setProjects(projectsData);
-      } catch (error) {
-        console.error('Error loading projects:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchProjects();
+  const fetchProjects = useCallback(async () => {
+    try {
+      const projectsData = await new Promise(resolve => {
+        chrome.runtime.sendMessage({ action: "getProjects" }, (response) => {
+          resolve(response?.data?.data || []);
+        });
+      });
+      setProjects(projectsData);
+    } catch (error) {
+      console.error('Error loading projects:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
+    fetchProjects();
+  }, [fetchProjects]);
 
+
+  const handleClickOutside = useCallback((event) => {
+    if (containerRef.current && !containerRef.current.contains(event.target)) {
+      setIsOpen(false);
+      setSearchQuery('');
+    }
+  }, []);
+
+  useEffect(() => {
     const root = containerRef.current?.getRootNode();
     root.addEventListener('mousedown', handleClickOutside);
     return () => root.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [handleClickOutside]);
 
-  useEffect(() => {
-    if (isOpen && dropdownRef.current && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      
-      if (spaceBelow < 200) {
-        dropdownRef.current.classList.add('bottom-full', 'top-auto');
-        dropdownRef.current.style.maxHeight = `${rect.top - 20}px`;
-      } else {
-        dropdownRef.current.classList.add('top-full', 'bottom-auto');
-        dropdownRef.current.style.maxHeight = `${Math.min(300, spaceBelow - 20)}px`;
-      }
+  const positionDropdown = useCallback(() => {
+    if (!isOpen || !dropdownRef.current || !containerRef.current) return;
 
-      // Focus the input when dropdown opens
-      if (inputRef.current) {
-        setTimeout(() => inputRef.current.focus(), 100);
-      }
+    const rect = containerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    if (spaceBelow < 200) {
+      dropdownRef.current.classList.add('bottom-full', 'top-auto');
+      dropdownRef.current.style.maxHeight = `${rect.top - 20}px`;
+    } else {
+      dropdownRef.current.classList.add('top-full', 'bottom-auto');
+      dropdownRef.current.style.maxHeight = '300px';
+    }
+
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
   }, [isOpen]);
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-    setSearchQuery('');
-  };
+  useEffect(() => {
+    positionDropdown();
+  }, [isOpen, positionDropdown]);
 
-  const handleSelectProject = (project) => {
+  const toggleDropdown = useCallback(() => {
+    setIsOpen(prev => !prev);
+    setSearchQuery('');
+  }, []);
+
+  useEffect(() => {
+    const innerContainer = containerRef.current?.firstChild;
+    if (innerContainer) {
+      innerContainer.style.borderRadius = selectedProjects.length > 4 ? "12px" : "30px";
+    }
+  }, [selectedProjects]);
+
+
+  const handleSelectProject = useCallback((project) => {
     const isSelected = selectedProjects.some(p => p._id === project._id);
     const newSelectedProjects = isSelected
       ? selectedProjects.filter(p => p._id !== project._id)
       : [...selectedProjects, project];
-    
-    onSelectProjects(newSelectedProjects);
-  };
 
-  const handleCreateProject = async () => {
+    onSelectProjects(newSelectedProjects);
+  }, [selectedProjects, onSelectProjects]);
+
+
+  const handleCreateProject = useCallback(async () => {
     if (!newProjectName.trim()) return;
-  
+
     try {
-      // First get the auth token and userId
       const { token, userId, error: authError } = await new Promise(resolve => {
         chrome.runtime.sendMessage({ action: "getToken" }, resolve);
       });
-  
+
       if (authError || !token || !userId) {
         throw new Error(authError || "Unauthorized! Please log in to the Oasis app.");
       }
-  
-      // Then send the create project request
+
       const response = await new Promise(resolve => {
         chrome.runtime.sendMessage({
           action: "createProject",
@@ -99,12 +112,11 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
           }
         }, resolve);
       });
-  
+
       if (response.error) {
         throw new Error(response.error);
       }
-  
-      // Update local state if successful
+
       setProjects(prev => [...prev, response.data]);
       onSelectProjects([...selectedProjects, response.data]);
       setNewProjectName('');
@@ -113,22 +125,68 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
       console.error('Error creating project:', error);
       alert(`Failed to create project: ${error.message}`);
     }
-  };
-  
+  }, [newProjectName, selectedProjects, onSelectProjects]);
 
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchQuery.toLowerCase())
+
+  const filteredProjects = useMemo(() =>
+    projects.filter(project =>
+      project.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [projects, searchQuery]
   );
 
-  const showCreateOption = searchQuery &&
-    !projects.some(p => p.name.toLowerCase() === searchQuery.toLowerCase());
+
+  const showCreateOption = useMemo(() =>
+    searchQuery && !projects.some(p =>
+      p.name.toLowerCase() === searchQuery.toLowerCase()
+    ),
+    [searchQuery, projects]
+  );
+
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' && showCreateOption) {
+      handleCreateProject();
+    }
+  }, [showCreateOption, handleCreateProject]);
+
+
+  const renderProjectList = () => {
+    if (isLoading) {
+      return <div className="px-4 py-2 text-sm text-[#8B9BAB]">Loading projects...</div>;
+    }
+
+    if (filteredProjects.length === 0 && !showCreateOption) {
+      return <div className="px-4 py-2 text-sm text-[#8B9BAB]">No projects found</div>;
+    }
+
+    return (
+      <>
+        {filteredProjects.map(project => (
+          <label
+            key={project._id}
+            className="flex items-center px-4 py-2 text-sm cursor-pointer hover:bg-[#374151]"
+          >
+            <input
+              type="checkbox"
+              checked={selectedProjects.some(p => p._id === project._id)}
+              onChange={() => handleSelectProject(project)}
+              className="mr-2 w-3 h-3 accent-[#2566E5] text-[#0E141A] rounded border border-[#2566E5] focus:ring-[#2566E5]"
+            />
+            <span className={selectedProjects.some(p => p._id === project._id) ? 'text-white' : 'text-[#96A6B6]'}>
+              {project.name}
+            </span>
+          </label>
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className="relative w-full" ref={containerRef}>
-      <div 
-        className={`w-full min-h-[38px] bg-[#0E141A] text-white px-2 py-[2px] text-sm outline-none transition-all flex items-center justify-between cursor-pointer ${
-          isOpen ? 'shadow-[inset_0_0_7px_rgba(255,255,255,0.21),inset_0_-3px_4px_rgba(255,255,255,0)]' : ''
-        }`}
+      <div
+        className={`w-full min-h-[38px] bg-[#0E141A] text-white px-[4px] py-[2px] text-sm outline-none transition-all flex items-center justify-between cursor-pointer ${isOpen ? 'shadow-[inset_0_0_7px_rgba(255,255,255,0.21),inset_0_-3px_4px_rgba(255,255,255,0)]' : ''
+          } ${className}`}
         onClick={toggleDropdown}
         style={{
           border: '1px solid transparent',
@@ -139,12 +197,12 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
         <div className="flex items-center gap-2 overflow-hidden flex-wrap">
           {selectedProjects.length > 0 ? (
             selectedProjects.map(project => (
-              <div 
-                key={project._id} 
+              <div
+                key={project._id}
                 className="flex items-center bg-[#141C24] border border-[#141C24] rounded-full px-3 py-1 text-sm"
               >
                 {project.name}
-                <span 
+                <span
                   className="ml-1.5 text-gray-400 text-sm cursor-pointer hover:text-white"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -156,18 +214,18 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
               </div>
             ))
           ) : (
-            <span className="text-[#8B9BAB] text-sm">
+            <span className="text-[#8B9BAB] text-sm ml-5">
               {isLoading ? 'Loading projects...' : 'Select projects...'}
             </span>
           )}
         </div>
 
-        <span className="flex-shrink-0 ml-2 text-gray-400 transition-transform duration-200">
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 448 512" 
-            width="14" 
-            height="14" 
+        <span className="flex-shrink-0 ml-2 text-gray-400 transition-transform duration-200 px-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 448 512"
+            width="14"
+            height="14"
             fill="currentColor"
             className={`transform ${isOpen ? 'rotate-180' : ''}`}
           >
@@ -182,32 +240,30 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
       </div>
 
       {isOpen && (
-        <div 
+        <div
           ref={dropdownRef}
-          className="absolute left-0 w-full bg-[#141C24] border border-[#374151] rounded-lg mt-1 overflow-y-auto z-[2147483647] shadow-lg"
+          className="absolute left-0 w-full rounded-xl mt-1 overflow-y-auto z-[2147483647] shadow-[0_4px_30px_rgba(0,0,0,0.45)] backdrop-blur-md custom-scrollbar"
           style={{
-            maxHeight: '300px'
+            background: 'linear-gradient(180deg, #0D1117 0%, #0F1621 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            maxHeight: '300px', // Fixed height with scroll
           }}
         >
-          <div className="p-2 border-b border-[#374151]">
+          <div className="sticky top-0 z-20 border-b border-gray-500 bg-[#0F1621]">
             <input
               ref={inputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Search or create project"
-              className="w-full bg-[#141C24] text-white p-2 text-sm outline-none border-none"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && showCreateOption) {
-                  handleCreateProject();
-                }
-              }}
+              className="w-full bg-[#0E141A] text-white p-2 text-sm outline-none border-none"
             />
           </div>
 
           {showCreateOption && (
             <div
-              className="flex items-center px-4 py-2 text-sm cursor-pointer text-[#96A6B6] hover:text-white hover:bg-[#374151]"
+              className="flex items-center px-4 py-2 text-sm cursor-pointer text-[#96A6B6] rounded-[12px] hover:text-white hover:bg-[#374151] border-b border-white"
               onClick={() => {
                 setNewProjectName(searchQuery);
                 handleCreateProject();
@@ -229,32 +285,11 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects }) => {
             </div>
           )}
 
-          {isLoading ? (
-            <div className="px-4 py-2 text-sm text-[#8B9BAB]">Loading projects...</div>
-          ) : filteredProjects.length === 0 ? (
-            <div className="px-4 py-2 text-sm text-[#8B9BAB]">No projects found</div>
-          ) : (
-            filteredProjects.map(project => (
-              <label
-                key={project._id}
-                className="flex items-center px-4 py-2 text-sm cursor-pointer hover:bg-[#374151]"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedProjects.some(p => p._id === project._id)}
-                  onChange={() => handleSelectProject(project)}
-                  className="mr-2 rounded border-[#828389] text-[#2566E5] focus:ring-[#2566E5]"
-                />
-                <span className={selectedProjects.some(p => p._id === project._id) ? 'text-white' : 'text-[#96A6B6]'}>
-                  {project.name}
-                </span>
-              </label>
-            ))
-          )}
+          {renderProjectList()}
         </div>
       )}
     </div>
   );
 };
 
-export default ProjectDropdown;
+export default React.memo(ProjectDropdown);

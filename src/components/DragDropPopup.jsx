@@ -23,10 +23,10 @@ const DragDropPopup = ({ onClose }) => {
               },
             })
           );
-          setTimeout(onClose, 100);
+          onClose(); // Close immediately after dispatching, no setTimeout
         };
         reader.readAsDataURL(files[0]);
-      } else if (url && /^https?:\/\//.test(url)) {
+      } else if (url && /^https?:\/{2}/.test(url)) {
         try {
           if (!document.getElementById('oasis-extension-root')) {
             await new Promise((resolve) => {
@@ -40,7 +40,7 @@ const DragDropPopup = ({ onClose }) => {
               pageTitle: document.title || ''
             }, resolve);
           });
-          setTimeout(onClose, 100);
+          onClose(); // Close immediately after dispatching, no setTimeout
         } catch (error) {
           console.error('Error handling URL drop:', error);
           onClose();

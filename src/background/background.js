@@ -41,7 +41,7 @@ async function getAuthToken() {
         }
         
         chrome.tabs.query({ url: "http://localhost:5173/*" }, (tabs) => {
-          if (tabs.length === 0) {
+          if (!Array.isArray(tabs) || tabs.length === 0) {
             resolve({ error: "Please log in to Oasis" });
             return;
           }
@@ -91,7 +91,7 @@ function monitorAuthState() {
     const { token } = await getAuthToken();
     if (token) {
       try {
-        const res = await fetch("http://localhost:5000/auth/validate", {
+        const res = await fetch("http://localhost:5000", {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
@@ -219,12 +219,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     (async () => {
       try {
         const url = request.url;
+        // 1. Immediately show the popup with loading state
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs[0];
+        if (!tab || !tab.id) {
+          console.error('No active tab found');
+          return;
+        }
+        await ensureContentScript(tab.id);
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'showPopup',
+          imageUrl: '',
+          tabUrl: url,
+          type: 'microlink',
+          pageTitle: url,
+          loading: true
+        });
+        // 2. Fetch preview from Microlink API
         let previewImage = '';
         let previewTitle = '';
         let previewUrl = url;
         let previewAuthor = '';
         let previewDescription = '';
-        // Fetch preview from Microlink API
         try {
           const apiUrl = `https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true`;
           const res = await fetch(apiUrl);
@@ -243,24 +259,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.error('Microlink fetch failed:', err);
           previewTitle = url;
         }
-        // Find the active tab in the current window
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        const tab = tabs[0];
-        if (!tab || !tab.id) {
-          console.error('No active tab found');
-          return;
-        }
-        await ensureContentScript(tab.id);
+        // 3. Update the popup with the fetched data
         await chrome.tabs.sendMessage(tab.id, {
-          action: 'showPopup',
+          action: 'updatePopup',
           imageUrl: previewImage,
           tabUrl: previewUrl,
           type: 'microlink',
           pageTitle: previewTitle,
           author: previewAuthor,
-          description: previewDescription
+          description: previewDescription,
+          loading: false
         });
-        console.log('Popup triggered with Microlink preview');
+        console.log('Popup updated with Microlink preview');
       } catch (error) {
         console.error('Error in Microlink autoDetectCopyUrl handler:', error);
       }
