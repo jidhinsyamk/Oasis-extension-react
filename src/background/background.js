@@ -18,58 +18,41 @@ chrome.runtime.onInstalled.addListener(() => {
 // Get authentication token with userId
 async function getAuthToken() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(['oasisToken', 'oasisUserId'], (result) => {
-      if (result.oasisToken) {
-        resolve({ 
-          token: result.oasisToken,
-          userId: result.oasisUserId || ''
-        });
-        return;
-      }
-      
-      chrome.cookies.get({
-        url: 'http://localhost:5000',
-        name: 'token'
-      }, (cookie) => {
-        if (cookie) {
-          chrome.storage.local.set({
-            oasisToken: cookie.value,
-            oasisUserId: cookie.userId || ''
-          });
-          resolve({ token: cookie.value, userId: cookie.userId || '' });
-          return;
-        }
-        
-        chrome.tabs.query({ url: "http://localhost:5173/*" }, (tabs) => {
-          if (!Array.isArray(tabs) || tabs.length === 0) {
-            resolve({ error: "Please log in to Oasis" });
-            return;
-          }
-
-          chrome.scripting.executeScript({
-            target: { tabId: tabs[0].id },
-            func: () => ({
-              token: localStorage.getItem('token'),
-              userId: localStorage.getItem('userId')
-            })
-          }, (results) => {
-            if (results?.[0]?.result) {
-              const { token, userId } = results[0].result;
-              if (token) {
-                chrome.storage.local.set({
-                  oasisToken: token,
-                  oasisUserId: userId || ''
-                });
-                resolve({ token, userId: userId || '' });
-              } else {
-                resolve({ error: "Not authenticated" });
-              }
-            } else {
-              resolve({ error: "Not authenticated" });
+    chrome.tabs.query({ url: "http://localhost:5173/*" }, (tabs) => {
+      if (Array.isArray(tabs) && tabs.length > 0) {
+        chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          func: () => ({
+            token: localStorage.getItem('token'),
+            userId: localStorage.getItem('userId')
+          })
+        }, (results) => {
+          if (results?.[0]?.result) {
+            const { token, userId } = results[0].result;
+            if (token) {
+              chrome.storage.local.set({
+                oasisToken: token,
+                oasisUserId: userId || ''
+              });
+              resolve({ token, userId: userId || '' });
+              return;
             }
-          });
+          }
+          chrome.storage.local.remove(['oasisToken', 'oasisUserId']);
+          resolve({ error: "Not authenticated" });
         });
-      });
+      } else {
+        chrome.storage.local.get(['oasisToken', 'oasisUserId'], (result) => {
+          if (result.oasisToken) {
+            resolve({
+              token: result.oasisToken,
+              userId: result.oasisUserId || ''
+            });
+          } else {
+            resolve({ error: "Please log in to Oasis" });
+          }
+        });
+      }
     });
   });
 }
