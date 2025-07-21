@@ -6,25 +6,38 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects, className = 
   const [isOpen, setIsOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+   const [authError, setAuthError] = useState(null); 
   const dropdownRef = useRef(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
 
-  const fetchProjects = useCallback(async () => {
+const fetchProjects = useCallback(async () => {
+    setIsLoading(true);
+    setAuthError(null); // Reset auth error
     try {
-      const projectsData = await new Promise(resolve => {
-        chrome.runtime.sendMessage({ action: "getProjects" }, (response) => {
-          resolve(response?.data?.data || []);
-        });
+      const response = await new Promise(resolve => {
+        chrome.runtime.sendMessage({ action: "getProjects" }, resolve);
       });
-      setProjects(projectsData);
+
+      if (response?.error) {
+        // Check if error is auth-related
+        if (response.error.includes("log in") || response.error.includes("Unauthorized")) {
+          setAuthError(response.error);
+          setProjects([]);
+          return;
+        }
+        console.error('Error loading projects:', response.error);
+      }
+
+      setProjects(response?.data?.data || []);
     } catch (error) {
       console.error('Error loading projects:', error);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
 
   useEffect(() => {
     fetchProjects();
@@ -151,13 +164,42 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects, className = 
   }, [showCreateOption, handleCreateProject]);
 
 
-  const renderProjectList = () => {
+    const renderProjectList = () => {
     if (isLoading) {
       return <div className="px-4 py-2 text-sm text-[#8B9BAB]">Loading projects...</div>;
     }
 
+    // Show auth error message with login button if auth failed
+    if (authError) {
+      return (
+        <div className="px-4 py-3 text-center">
+          <div className="text-sm text-[#8B9BAB] mb-2">
+            {authError.includes("log in") ? authError : "Please log in to access projects"}
+          </div>
+          <button
+            onClick={() => chrome.runtime.sendMessage({ action: "goToApp" })}
+            className="text-white text-xs bg-[#2566E5] hover:bg-[#1a56c7] rounded-full px-3 py-1 transition-colors"
+          >
+            Log in to Oasis
+          </button>
+        </div>
+      );
+    }
+
     if (filteredProjects.length === 0 && !showCreateOption) {
-      return <div className="px-4 py-2 text-sm text-[#8B9BAB]">No projects found</div>;
+      return<div className='flex justify-between items-center'>
+<div className="px-4 py-2 text-sm text-[#8B9BAB]">No projects found</div>
+<span className='text-sm text-[#8B9BAB] px-4 py-2'>
+              Please{' '}
+              <span 
+                onClick={() => chrome.runtime.sendMessage({ action: "goToApp" })}
+                className="text-blue-400 hover:text-blue-300  text-sm underline cursor-pointer"
+              >
+                log in to Remnent
+              </span>{' '}
+              to access projects
+            </span>
+      </div> 
     }
 
     return (
@@ -165,7 +207,7 @@ const ProjectDropdown = ({ selectedProjects = [], onSelectProjects, className = 
         {filteredProjects.map(project => (
           <label
             key={project._id}
-            className="flex items-center px-4 py-2 text-sm cursor-pointer hover:bg-[#374151]"
+            className="flex items-center px-4 py-2 text-sm cursor-pointer rounded-[12px] hover:bg-[#FFFFFF1A]"
           >
             <input
               type="checkbox"
