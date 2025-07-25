@@ -14,7 +14,7 @@ const DragDropPopup = ({ onClose }) => {
         const reader = new FileReader();
         reader.onload = (evt) => {
           window.dispatchEvent(
-            new CustomEvent("oasisMessage", {
+            new CustomEvent("remnentMessage", {
               detail: {
                 action: "showPopup",
                 imageUrl: evt.target.result,
@@ -28,7 +28,7 @@ const DragDropPopup = ({ onClose }) => {
         reader.readAsDataURL(files[0]);
       } else if (url && /^https?:\/{2}/.test(url)) {
         try {
-          if (!document.getElementById('oasis-extension-root')) {
+          if (!document.getElementById('remnent-extension-root')) {
             await new Promise((resolve) => {
               chrome.runtime.sendMessage({ action: 'injectContentScript' }, resolve);
             });

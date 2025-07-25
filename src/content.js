@@ -4,9 +4,9 @@ import App from './components/App';
 
 // 1. Initialize global state with robust tags system
 (function initGlobalState() {
-  window.OasisExtension = window.OasisExtension || {};
+  window.RemnentExtension = window.RemnentExtension || {};
   
-  window.OasisExtension.tags = {
+  window.RemnentExtension.tags = {
     _tags: [],
     getTags() {
       return [...this._tags];
@@ -25,18 +25,18 @@ import App from './components/App';
   };
 
   // Initialize drag state
-  window.OasisExtension.dragState = {
+  window.RemnentExtension.dragState = {
     isDragging: false,
     currentFile: null
   };
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('Oasis global state initialized', window.OasisExtension);
+    console.log('Remnent global state initialized', window.RemnentExtension);
   }
 })();
 
 // 2. Enhanced Error Boundary
-class OasisErrorBoundary extends React.Component {
+class RemnentErrorBoundary extends React.Component {
   state = { hasError: false };
 
   static getDerivedStateFromError() {
@@ -44,7 +44,7 @@ class OasisErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('Oasis Error Boundary:', error, info);
+    console.error('Remnent Error Boundary:', error, info);
   }
 
   render() {
@@ -69,10 +69,10 @@ class OasisErrorBoundary extends React.Component {
 }
 
 // 3. Main App Wrapper with drag handling
-const OasisAppWrapper = () => {
+const RemnentAppWrapper = () => {
   // Ensure tags system exists
-  if (!window.OasisExtension?.tags) {
-    window.OasisExtension.tags = {
+  if (!window.RemnentExtension?.tags) {
+    window.RemnentExtension.tags = {
       getTags: () => [],
       setTags: () => {},
       addTag: () => {},
@@ -84,17 +84,17 @@ const OasisAppWrapper = () => {
   useEffect(() => {
     const handleDragOver = (e) => {
       e.preventDefault();
-      if (!window.OasisExtension.dragState.isDragging) {
-        window.OasisExtension.dragState.isDragging = true;
-        window.dispatchEvent(new CustomEvent('oasisDragStateChange', {
+      if (!window.RemnentExtension.dragState.isDragging) {
+        window.RemnentExtension.dragState.isDragging = true;
+        window.dispatchEvent(new CustomEvent('remnentDragStateChange', {
           detail: { isDragging: true }
         }));
       }
     };
 
     const handleDragEnd = () => {
-      window.OasisExtension.dragState.isDragging = false;
-      window.dispatchEvent(new CustomEvent('oasisDragStateChange', {
+      window.RemnentExtension.dragState.isDragging = false;
+      window.dispatchEvent(new CustomEvent('remnentDragStateChange', {
         detail: { isDragging: false }
       }));
     };
@@ -111,7 +111,7 @@ const OasisAppWrapper = () => {
   }, []);
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('oasisUIReady'));
+    window.dispatchEvent(new CustomEvent('remnentUIReady'));
   }, []);
 
   return (
@@ -125,9 +125,9 @@ const OasisAppWrapper = () => {
       pointerEvents: 'none'
     }}>
       <div style={{ pointerEvents: 'auto' }}>
-        <OasisErrorBoundary>
-          <App tagsManager={window.OasisExtension.tags} />
-        </OasisErrorBoundary>
+        <RemnentErrorBoundary>
+          <App tagsManager={window.RemnentExtension.tags} />
+        </RemnentErrorBoundary>
       </div>
     </div>
   );
@@ -156,16 +156,16 @@ const messageHandler = {
           };
 
           const dispatchPopup = () => {
-            window.dispatchEvent(new CustomEvent('oasisMessage', { detail: popupDetail }));
+            window.dispatchEvent(new CustomEvent('remnentMessage', { detail: popupDetail }));
             sendResponse({ success: true });
           };
 
-          if (!document.getElementById('oasis-extension-root')) {
-            pendingOasisPopup = popupDetail;
+          if (!document.getElementById('remnent-extension-root')) {
+            pendingRemnentPopup = popupDetail;
             // This will trigger the injection system
             setTimeout(() => {
               // If still not injected, try again
-              if (!document.getElementById('oasis-extension-root')) {
+              if (!document.getElementById('remnent-extension-root')) {
                 // force injection
                 if (typeof injectionSystem !== 'undefined') injectionSystem.inject();
               }
@@ -177,13 +177,13 @@ const messageHandler = {
 
         case 'updatePopup':
           // Dispatch an update event to update the popup's data
-          window.dispatchEvent(new CustomEvent('oasisMessage', { detail: { ...request, action: 'updatePopup' } }));
+          window.dispatchEvent(new CustomEvent('remnentMessage', { detail: { ...request, action: 'updatePopup' } }));
           sendResponse && sendResponse({ success: true });
           return true;
 
         case 'getTags':
           sendResponse({ 
-            tags: window.OasisExtension?.tags?.getTags() || [] 
+            tags: window.RemnentExtension?.tags?.getTags() || [] 
           });
           return true;
 
@@ -219,7 +219,7 @@ const messageHandler = {
         reader.readAsDataURL(imageFile);
       });
 
-      window.dispatchEvent(new CustomEvent('oasisMessage', {
+      window.dispatchEvent(new CustomEvent('remnentMessage', {
         detail: {
           action: 'showPopup',
           imageUrl: fileData,
@@ -258,9 +258,9 @@ const messageHandler = {
 
 // 5. Injection System with Shadow DOM for Style Isolation
 const injectionSystem = {
-  containerId: 'oasis-extension-root',
-  styleId: 'oasis-extension-styles',
-  reactRootId: 'oasis-react-root',
+  containerId: 'remnent-extension-root',
+  styleId: 'remnent-extension-styles',
+  reactRootId: 'remnent-react-root',
   isInjected: false,
 
   inject() {
@@ -293,7 +293,7 @@ const injectionSystem = {
 
     try {
       const root = createRoot(container.shadowRoot.getElementById(this.reactRootId));
-      root.render(<OasisAppWrapper />);
+      root.render(<RemnentAppWrapper />);
       this.isInjected = true;
       messageHandler.flushQueue();
       
@@ -360,7 +360,7 @@ const injectionSystem = {
         border-radius: 4px;
         z-index: 2147483647;
       ">
-        Oasis failed to load. Refresh the page.
+        Remnent failed to load. Refresh the page.
       </div>
     `;
     document.documentElement.appendChild(container);
@@ -414,9 +414,9 @@ let processingTimeout = null;
 
 // Load initial state and set up initial event listener
 function initializeAutoDetect() {
-  chrome.storage.local.get(['oasisAutoDetectLinks'], (result) => {
+  chrome.storage.local.get(['remnentAutoDetectLinks'], (result) => {
     console.log('Loading auto-detect state:', result);
-    autoDetectLinksEnabled = !!result.oasisAutoDetectLinks;
+    autoDetectLinksEnabled = !!result.remnentAutoDetectLinks;
   });
 }
 
@@ -490,8 +490,8 @@ async function getClipboardText() {
 }
 
 document.addEventListener('copy', async (e) => {
-  chrome.storage.local.get(['oasisAutoDetectLinks'], async (result) => {
-    const enabled = !!result.oasisAutoDetectLinks;
+  chrome.storage.local.get(['remnentAutoDetectLinks'], async (result) => {
+    const enabled = !!result.remnentAutoDetectLinks;
     console.log('Copy event detected, auto-detect enabled:', enabled);
     if (!enabled) return;
     let copiedText = '';
@@ -516,8 +516,8 @@ document.addEventListener('copy', async (e) => {
 
 document.addEventListener('keydown', async (e) => {
   if (e.ctrlKey && e.key === 'c') {
-    chrome.storage.local.get(['oasisAutoDetectLinks'], async (result) => {
-      const enabled = !!result.oasisAutoDetectLinks;
+    chrome.storage.local.get(['remnentAutoDetectLinks'], async (result) => {
+      const enabled = !!result.remnentAutoDetectLinks;
       if (!enabled) return;
       console.log('Ctrl+C detected');
       setTimeout(async () => {
@@ -536,12 +536,12 @@ document.addEventListener('keydown', async (e) => {
 initializeExtension();
 
 // At the top of content.js
-let pendingOasisPopup = null;
+let pendingRemnentPopup = null;
 
 // Listen for UI ready event
-window.addEventListener('oasisUIReady', () => {
-  if (pendingOasisPopup) {
-    window.dispatchEvent(new CustomEvent('oasisMessage', { detail: pendingOasisPopup }));
-    pendingOasisPopup = null;
+window.addEventListener('remnentUIReady', () => {
+  if (pendingRemnentPopup) {
+    window.dispatchEvent(new CustomEvent('remnentMessage', { detail: pendingRemnentPopup }));
+    pendingRemnentPopup = null;
   }
 });

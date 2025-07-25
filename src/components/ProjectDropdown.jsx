@@ -112,7 +112,7 @@ const fetchProjects = useCallback(async () => {
       });
 
       if (authError || !token || !userId) {
-        throw new Error(authError || "Unauthorized! Please log in to the Oasis app.");
+        throw new Error(authError || "Unauthorized! Please log in to the Remnent app.");
       }
 
       const response = await new Promise(resolve => {
@@ -178,9 +178,9 @@ const fetchProjects = useCallback(async () => {
           </div>
           <button
             onClick={() => chrome.runtime.sendMessage({ action: "goToApp" })}
-            className="text-white text-xs bg-[#2566E5] hover:bg-[#1a56c7] rounded-full px-3 py-1 transition-colors"
+            className="text-black text-xs bg-white hover:bg-gray-500 rounded-full px-3 py-1 transition-colors"
           >
-            Log in to Oasis
+            Log in to Remnent
           </button>
         </div>
       );

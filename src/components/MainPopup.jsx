@@ -28,8 +28,8 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
 
       }
     };
-    window.addEventListener('oasisMessage', handleUpdatePopup);
-    return () => window.removeEventListener('oasisMessage', handleUpdatePopup);
+    window.addEventListener('remnentMessage', handleUpdatePopup);
+    return () => window.removeEventListener('remnentMessage', handleUpdatePopup);
   }, []);
 
 
@@ -63,9 +63,9 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
 
   useEffect(() => {
 
-    chrome.storage.local.get(['oasisAutoDetectLinks'], (result) => {
-      if (typeof result.oasisAutoDetectLinks === 'boolean') {
-        setAutoDetectLinks(result.oasisAutoDetectLinks);
+    chrome.storage.local.get(['remnentAutoDetectLinks'], (result) => {
+      if (typeof result.remnentAutoDetectLinks === 'boolean') {
+        setAutoDetectLinks(result.remnentAutoDetectLinks);
       }
     });
   }, []);
@@ -85,7 +85,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
 
       if (authError || !token || !userId) {
         throw new Error(
-          authError || "Unauthorized! Please log in to the Oasis app."
+          authError || "Unauthorized! Please log in to the Remnent app."
         );
       }
 
@@ -133,7 +133,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
   const handleToggleChange = () => {
     const newValue = !autoDetectLinks;
     setAutoDetectLinks(newValue);
-    chrome.storage.local.set({ oasisAutoDetectLinks: newValue });
+    chrome.storage.local.set({ remnentAutoDetectLinks: newValue });
 
     chrome.runtime.sendMessage({ action: 'autoDetectLinksToggled', enabled: newValue });
   };
@@ -163,30 +163,32 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
       }}
     >
       <div
-        className="flex flex-col p-5 text-white relative"
+        className="flex flex-col p-5 text-white relative h-full"
         style={{
           flex: "1",
-          overflow: "hidden",
+          overflow: "visible",
         }}
       >
 
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 p-0 bg-transparent border-none outline-none hover:text-gray-300 text-gray-400"
+          className="absolute top-3 right-4 p-2 bg-transparent border-none outline-none hover:text-gray-300 text-gray-400 flex items-center justify-center z-50"
           style={{
-            width: "16px",
-            height: "16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            padding: 0,
+            cursor: "pointer",
+            zIndex: 50,
           }}
         >
           <svg
-            width="14"
-            height="14"
+            width="10"
+            height="10"
             viewBox="0 0 14 14"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
           >
             <path
               d="M13 1L1 13M1 1L13 13"
@@ -197,7 +199,8 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
           </svg>
         </button>
 
-        <div className="flex-grow overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded">
+        {/* Scrollable content area */}
+        <div className="flex-grow overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500 scrollbar-thumb-rounded" style={{ maxHeight: '420px' }}>
 
           <div className="flex gap-3 mb-4" style={{ position: 'relative' }}>
             <img
@@ -243,7 +246,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
           </div>
 
 
-          <div className="mb-4">
+          <div className="mb-2">
             <label className="block text-sm mb-1.5">Name</label>
             <input
               type="text"
@@ -260,7 +263,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
             />
           </div>
 
-          <div className="mb-4">
+          <div className="mb-2">
             <label className="block text-sm mb-1.5">Project</label>
             <ProjectDropdown
               selectedProjects={selectedProjects}
@@ -269,12 +272,12 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
             />
           </div>
 
-          <div className="mb-4">
+          <div className="mb-2">
             <label className="block text-sm mb-1.5">Tags</label>
             <TagsInput tags={tags} setTags={setTags} className="w-full min-h-[38px] px-2 py-2 text-sm rounded-full" />
           </div>
 
-          <div className="mt-4 mb-4">
+          <div className="mt-2 mb-2">
             <label className="block text-sm mb-1.5">Notes</label>
             <textarea
               ref={notesRef}
@@ -322,6 +325,7 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
           {error && <div className="text-red-400 text-sm mt-4">{error}</div>}
         </div>
 
+        {/* Bottom bar (auto-detect toggle) */}
         <div
           className="flex items-center justify-between px-5 -mx-5 mb-3"
           style={{
@@ -330,10 +334,9 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
             border: "1px solid rgba(255, 255, 255, 0.1)",
           }}
         >
-          <p className="w-[251px] h-[18px] opacity-80 font-[400] text-[13px] leading-[140%] tracking-[0px] align-middle  text-[#FFFFFF]">
-            Oasis auto-detects when you copy a link.
+          <p className="w-[261px] h-[18px] opacity-80 font-[400] text-[13px] leading-[140%] tracking-[0px] align-middle  text-[#FFFFFF]">
+            Remnent auto-detects when you copy a link.
           </p>
-
 
           <label className="relative inline-flex items-center cursor-pointer w-8 h-[18px]">
             <input
@@ -352,8 +355,8 @@ const MainPopup = ({ imageUrl, tabUrl, type, onClose, onSuccess, pageTitle, auth
           </label>
         </div>
 
-
-        <div className="flex justify-between mt-5">
+        {/* Fixed action buttons at the bottom */}
+        <div className="flex justify-between mt-5 sticky bottom-0 bg-[#0E141A] pt-2 pb-2 z-40" style={{ boxShadow: '0 -2px 10px rgba(0,0,0,0.08)' }}>
           <button
             onClick={handleGoToApp}
             className="text-white text-sm transition-colors hover:opacity-90 flex items-center gap-2 justify-center"

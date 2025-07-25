@@ -1,14 +1,14 @@
 // Initialize context menus on install
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: "saveImageToOasis",
-    title: "Save Image to Oasis",
+    id: "saveImageToRemnent",
+    title: "Save Image to Remnent",
     contexts: ["image"]
   });
 
   chrome.contextMenus.create({
-    id: "savePageToOasis",
-    title: "Save Page to Oasis",
+    id: "savePageToRemnent",
+    title: "Save Page to Remnent",
     contexts: ["page"]
   });
 
@@ -31,25 +31,25 @@ async function getAuthToken() {
             const { token, userId } = results[0].result;
             if (token) {
               chrome.storage.local.set({
-                oasisToken: token,
-                oasisUserId: userId || ''
+                remnentToken: token,
+                remnentUserId: userId || ''
               });
               resolve({ token, userId: userId || '' });
               return;
             }
           }
-          chrome.storage.local.remove(['oasisToken', 'oasisUserId']);
+          chrome.storage.local.remove(['remnentToken', 'remnentUserId']);
           resolve({ error: "Not authenticated" });
         });
       } else {
-        chrome.storage.local.get(['oasisToken', 'oasisUserId'], (result) => {
-          if (result.oasisToken) {
+        chrome.storage.local.get(['remnentToken', 'remnentUserId'], (result) => {
+          if (result.remnentToken) {
             resolve({
-              token: result.oasisToken,
-              userId: result.oasisUserId || ''
+              token: result.remnentToken,
+              userId: result.remnentUserId || ''
             });
           } else {
-            resolve({ error: "Please log in to Oasis" });
+            resolve({ error: "Please log in to Remnent" });
           }
         });
       }
@@ -62,8 +62,8 @@ function monitorAuthState() {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "updateAuthToken") {
       chrome.storage.local.set({
-        oasisToken: request.token,
-        oasisUserId: request.userId || ''
+        remnentToken: request.token,
+        remnentUserId: request.userId || ''
       }, () => sendResponse({ success: true }));
       return true;
     }
@@ -78,7 +78,7 @@ function monitorAuthState() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) {
-          chrome.storage.local.remove(['oasisToken', 'oasisUserId']);
+          chrome.storage.local.remove(['remnentToken', 'remnentUserId']);
         }
       } catch (error) {
         console.error("Token validation error:", error);
@@ -89,9 +89,9 @@ function monitorAuthState() {
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "saveImageToOasis" && info.srcUrl) {
+  if (info.menuItemId === "saveImageToRemnent" && info.srcUrl) {
     await handleImageSave(tab, info.srcUrl);
-  } else if (info.menuItemId === "savePageToOasis") {
+  } else if (info.menuItemId === "savePageToRemnent") {
     await handlePageSave(tab);
   }
 });
@@ -172,7 +172,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.scripting.executeScript({
       target: { tabId: sender.tab.id },
       func: () => {
-        return window.OasisExtension?.tags?.getTags() || [];
+        return window.RemnentExtension?.tags?.getTags() || [];
       }
     }, (results) => {
       sendResponse({ tags: results?.[0]?.result || [] });
@@ -284,7 +284,7 @@ async function handleCreateProject(request) {
 
   const { token, userId: authUserId, error } = await getAuthToken();
   if (error || !token) {
-    throw new Error(error || "Please log in to Oasis");
+    throw new Error(error || "Please log in to Remnent");
   }
 
   const projectData = {
@@ -305,7 +305,7 @@ async function handleCreateProject(request) {
   const data = await res.json();
   if (!res.ok) {
     if (res.status === 401) {
-      chrome.storage.local.remove(['oasisToken', 'oasisUserId']);
+      chrome.storage.local.remove(['remnentToken', 'remnentUserId']);
     }
     throw new Error(data.message || `Failed to create project (${res.status})`);
   }
@@ -318,7 +318,7 @@ async function handleGetProjects(sendResponse) {
   const { token, error } = await getAuthToken();
   
   if (error || !token) {
-    sendResponse({ error: error || "Please log in to Oasis" });
+    sendResponse({ error: error || "Please log in to Remnent" });
     return;
   }
 
@@ -335,7 +335,7 @@ async function handleGetProjects(sendResponse) {
       sendResponse({ data });
     } else {
       if (res.status === 401) {
-        chrome.storage.local.remove(['oasisToken', 'oasisUserId']);
+        chrome.storage.local.remove(['remnentToken', 'remnentUserId']);
       }
       sendResponse({ error: data.message || "Failed to load projects" });
     }
@@ -376,7 +376,7 @@ async function saveImageToBackend(data) {
     if (!apiResponse.ok) {
       const error = await apiResponse.json().catch(() => ({}));
       if (apiResponse.status === 401) {
-        chrome.storage.local.remove(['oasisToken', 'oasisUserId']);
+        chrome.storage.local.remove(['remnentToken', 'remnentUserId']);
       }
       throw new Error(error.message || `Server error: ${apiResponse.status}`);
     }
