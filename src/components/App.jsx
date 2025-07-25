@@ -35,12 +35,12 @@ const App = ({ tagsManager }) => {
       }
     };
 
-    window.addEventListener("oasisMessage", handleMessage);
+    window.addEventListener("remnentMessage", handleMessage);
 
     const handleDragOver = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!document.getElementById("oasis-dragdrop-popup")) {
+      if (!document.getElementById("remnent-dragdrop-popup")) {
         setPopupType("dragdrop");
       }
     };
@@ -48,7 +48,7 @@ const App = ({ tagsManager }) => {
     window.addEventListener("dragover", handleDragOver);
 
     return () => {
-      window.removeEventListener("oasisMessage", handleMessage);
+      window.removeEventListener("remnentMessage", handleMessage);
       window.removeEventListener("dragover", handleDragOver);
     };
   }, []);

@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Oasis Chrome Extension",
+    "name": "Remnent Chrome Extension",
     "version": "1.0",
-    "description": "Save images to Oasis",
+    "description": "Save images to Remnent",
     "permissions": [
       "contextMenus",
       "activeTab",
@@ -16,7 +16,7 @@
       "http://localhost:5000/*",
       "http://localhost:5173/*",
       "https://api-staging.remnant.buzz/*",
-      "https://oasis.remnant.buzz/*",
+      "https://remnent.remnant.buzz/*",
       "https://app.remnant.buzz/*"
     ],
     "background": {

@@ -29,7 +29,7 @@ const SuccessPopup = ({ onClose }) => {
   }, []);
 
   const handleVisit = () => {
-    window.open("http://localhost:5173/references", "_blank");
+    window.open("http://localhost:5173", "_blank");
     onClose();
   };
 
@@ -59,7 +59,7 @@ const SuccessPopup = ({ onClose }) => {
         Saved Successfully!
       </h2>
       <p className="text-gray-400 mb-10 text-sm">
-        Your image has been saved to Oasis.
+        Your image has been saved to Remnent.
       </p>
 
       
